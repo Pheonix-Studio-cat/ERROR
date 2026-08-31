@@ -1,0 +1,101 @@
+/* =============================================================
+   base.css - Design-Tokens, Reset und Grundtypografie
+   Dark Mode ist der Standard (und der einzige Modus - passend zum Thema).
+   ============================================================= */
+
+:root {
+  color-scheme: dark;
+
+  /* Flaechen */
+  --bg: #06070a;
+  --bg-deep: #030405;
+  --panel: #0c0e13;
+  --line: rgba(255 255 255 / 0.09);
+  --line-strong: rgba(255 255 255 / 0.16);
+
+  /* Text */
+  --text: #e7eaf0;
+  --text-dim: #9aa3b2;
+  --text-faint: #5d6675;
+
+  /* Signalfarben */
+  --red: #ff3b47;
+  --orange: #ff8a3d;
+  --amber: #ffc247;
+  --green: #35d07f;
+  --cyan: #46e0ff;
+  --violet: #b085ff;
+
+  /* Aktuelle Akzentfarbe - wird pro Severity ueberschrieben */
+  --accent: var(--orange);
+  --accent-soft: rgba(255 138 61 / 0.16);
+
+  --mono: ui-monospace, "SF Mono", SFMono-Regular, "JetBrains Mono", "Fira Code",
+    "Roboto Mono", Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+/* Severity steuert die Akzentfarbe der gesamten Karte. */
+[data-tone='low'] { --accent: var(--amber); --accent-soft: rgba(255 194 71 / 0.15); }
+[data-tone='medium'] { --accent: var(--orange); --accent-soft: rgba(255 138 61 / 0.16); }
+[data-tone='high'] { --accent: #ff6b3d; --accent-soft: rgba(255 107 61 / 0.18); }
+[data-tone='critical'] { --accent: var(--red); --accent-soft: rgba(255 59 71 / 0.18); }
+[data-tone='fine'] { --accent: var(--cyan); --accent-soft: rgba(70 224 255 / 0.14); }
+[data-tone='secret'] { --accent: var(--violet); --accent-soft: rgba(176 133 255 / 0.16); }
+[data-tone='ok'] { --accent: var(--green); --accent-soft: rgba(53 208 127 / 0.15); }
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  background:
+    radial-gradient(110% 70% at 50% 0%, color-mix(in srgb, var(--accent) 7%, transparent), transparent 65%),
+    var(--bg);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: clamp(0.875rem, 0.82rem + 0.25vw, 1rem);
+  line-height: 1.6;
+  letter-spacing: 0.01em;
+  overflow-x: hidden;
+}
+
+h1, h2, h3, p, dl, dd, blockquote, figure, pre {
+  margin: 0;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+::selection {
+  background: var(--accent);
+  color: #05060a;
+}
+
+/* Feiner Rauschfilm über dem Hintergrund - gibt der Flaeche Textur. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.035;
+  background-image:
+    repeating-linear-gradient(90deg, #fff 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(0deg, #fff 0 1px, transparent 1px 3px);
+}

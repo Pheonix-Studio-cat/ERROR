@@ -1,0 +1,121 @@
+/* =============================================================
+   effects.css - Scanlines, Flackern, Glitch-Stösse.
+   Alles dekorativ und dezent; ganz unten wird saemtliche
+   Bewegung für "prefers-reduced-motion" abgeschaltet.
+   ============================================================= */
+
+/* --- Keyframes ------------------------------------------------------------ */
+@keyframes line-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+@keyframes soft-flicker {
+  0%, 100% { opacity: 1; }
+  48% { opacity: 1; }
+  50% { opacity: 0.5; }
+  52% { opacity: 1; }
+}
+
+@keyframes bar-drop {
+  from { transform: translateY(-12vh); opacity: 0.9; }
+  to { transform: translateY(112vh); opacity: 0; }
+}
+
+@keyframes flicker-hit {
+  0%, 100% { opacity: 0; }
+  10% { opacity: 0.5; }
+  25% { opacity: 0.05; }
+  40% { opacity: 0.35; }
+  60% { opacity: 0.02; }
+  75% { opacity: 0.22; }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translate(0); }
+  25% { transform: translate(-2px, 1px); }
+  50% { transform: translate(2px, -1px); }
+  75% { transform: translate(-1px, -1px); }
+}
+
+/* --- Overlay -------------------------------------------------------------- */
+.glitch-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+}
+
+/* Scanlines: das, was einen Bildschirm nach Bildschirm aussehen lässt. */
+.glitch-overlay__scanlines {
+  position: absolute;
+  inset: 0;
+  opacity: 0.4;
+  background: repeating-linear-gradient(
+    180deg,
+    rgba(0 0 0 / 0.32) 0 1px,
+    transparent 1px 3px
+  );
+}
+
+.glitch-overlay__flicker {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  background: linear-gradient(180deg, var(--accent-soft), rgba(70 224 255 / 0.05));
+}
+
+.glitch-overlay__bar {
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: 12vh;
+  opacity: 0;
+  background: linear-gradient(
+    180deg,
+    transparent,
+    rgba(255 255 255 / 0.04) 45%,
+    var(--accent-soft) 55%,
+    transparent
+  );
+}
+
+.glitch-overlay.is-flickering .glitch-overlay__flicker {
+  animation: flicker-hit 0.26s steps(3, end) 1;
+}
+
+.glitch-overlay.is-bursting .glitch-overlay__bar,
+.glitch-overlay.is-bursting-hard .glitch-overlay__bar {
+  animation: bar-drop 0.5s ease-in 1;
+}
+
+.glitch-overlay.is-bursting-hard .glitch-overlay__flicker {
+  animation: flicker-hit 0.5s steps(4, end) 1;
+}
+
+/* Beim harten Glitch wackelt kurz der ganze Bildschirm. */
+.screen:has(.glitch-overlay.is-bursting-hard) .term {
+  animation: shake 0.3s steps(2, end) 1;
+}
+
+/* --- Bewegung reduzieren -------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .glitch-overlay,
+  body::before {
+    display: none;
+  }
+
+  .prompt__caret { opacity: 1; }
+}
