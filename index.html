@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>ERROR</title>
+    <meta
+      name="description"
+      content="ERROR - eine Website, die bei jedem Laden so tut, als wäre sie kaputt. Ist sie aber nicht."
+    />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#06070a" />
+
+    <!-- Favicon als Inline-SVG: keine externen Bilder nötig. -->
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2306070a'/%3E%3Ctext x='16' y='23' font-family='monospace' font-size='20' font-weight='bold' fill='%23ff3b47' text-anchor='middle'%3E!%3C/text%3E%3C/svg%3E"
+    />
+
+    <link rel="stylesheet" href="./src/styles/base.css" />
+    <link rel="stylesheet" href="./src/styles/terminal.css" />
+    <link rel="stylesheet" href="./src/styles/effects.css" />
+  </head>
+  <body>
+    <!-- Die App baut sich vollständig in diesen Container. -->
+    <div id="app"></div>
+
+    <!-- Ohne JavaScript gibt es trotzdem einen Fehler. Versprochen. -->
+    <noscript>
+      <div class="screen">
+        <div class="term">
+          <div class="term__line"><span class="accent bold">error.sys 0.9.1-beta</span></div>
+          <div class="term__line"><span class="faint">Nur Fehler. Rund um die Uhr.</span></div>
+          <div class="term__line">&nbsp;</div>
+          <div class="term__line"><span class="dim">[--:--:--] </span><span class="red bold">FATAL  ERROR JS</span><span> · JavaScript disabled.</span></div>
+          <div class="term__line">&nbsp;</div>
+          <div class="term__line"><span class="dim">  Ohne JavaScript können wir keine zufälligen Fehler liefern.</span></div>
+          <div class="term__line">&nbsp;</div>
+          <div class="term__line"><span class="joke">  &bdquo;Der einzige echte Fehler auf dieser Seite.&ldquo;</span></div>
+          <div class="term__line"><span class="joke">  &bdquo;Ausgerechnet.&ldquo;</span></div>
+        </div>
+      </div>
+    </noscript>
+
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>

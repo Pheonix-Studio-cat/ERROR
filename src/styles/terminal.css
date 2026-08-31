@@ -1,0 +1,199 @@
+/* =============================================================
+   terminal.css - der komplette Bildschirm.
+   Ein Terminalfenster, sonst nichts: Text, Prompt, Statuszeile.
+   ============================================================= */
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  overflow: hidden;
+}
+
+.screen {
+  position: relative;
+  z-index: 1;
+  height: 100dvh;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+}
+
+/* --- Ausgabefläche ------------------------------------------------------- */
+.term {
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: clamp(0.75rem, 2.5vw, 1.5rem) clamp(0.75rem, 3vw, 2rem);
+  padding-bottom: 0.5rem;
+  font-size: clamp(0.72rem, 2.5vw, 0.86rem);
+  line-height: 1.55;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+  -webkit-overflow-scrolling: touch;
+}
+
+.term::-webkit-scrollbar { width: 8px; }
+.term::-webkit-scrollbar-thumb { background: var(--line-strong); }
+
+.term__line {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  min-height: 1.55em;
+  animation: line-in 0.18s ease both;
+}
+
+/* Blockschrift: enge Zeilen, damit die Ziffern zusammenhängen. */
+.term__line:has(.banner) {
+  line-height: 1;
+  min-height: 0;
+}
+
+/* Farbrollen - im Prinzip die ANSI-Farben dieses Terminals. */
+.dim { color: var(--text-dim); }
+.faint { color: var(--text-faint); }
+.accent { color: var(--accent); }
+.bold { font-weight: 700; }
+.red { color: var(--red); }
+.green { color: var(--green); }
+.cyan { color: var(--cyan); }
+.amber { color: var(--amber); }
+.cmd { color: var(--text); }
+
+/* Der Witz ist die einzige Zeile, die etwas heller leuchtet. */
+.joke {
+  color: var(--text);
+  text-shadow: 0 0 22px var(--accent-soft);
+}
+
+/* --- Prompt --------------------------------------------------------------- */
+.prompt {
+  padding: 0.25rem 0 clamp(0.75rem, 2.5vw, 1.25rem);
+  font-size: clamp(0.72rem, 2.5vw, 0.86rem);
+  line-height: 1.55;
+  cursor: text;
+}
+
+.prompt__line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+}
+
+.prompt__user { color: var(--green); }
+.prompt__path { color: var(--text-dim); }
+
+.prompt__field {
+  position: relative;
+  flex: 1 1 8rem;
+  min-width: 6rem;
+  color: var(--text);
+}
+
+/* Das echte Eingabefeld liegt unsichtbar über der Zeile. */
+.prompt__input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: transparent;
+  caret-color: transparent;
+  font: inherit;
+  outline: none;
+}
+
+.prompt__caret {
+  display: inline-block;
+  width: 0.6em;
+  height: 1.05em;
+  translate: 0 0.15em;
+  background: var(--accent);
+  animation: blink 1.05s steps(2, end) infinite;
+}
+
+.prompt.is-busy .prompt__caret { opacity: 0.25; animation: none; }
+
+/* Schnellbefehle: nur die Befehle selbst, ohne Beschreibung. */
+.prompt__quick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.25rem;
+  margin-top: 0.5rem;
+}
+
+.quick {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-faint);
+  font: inherit;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.quick::before {
+  content: '› ';
+  color: var(--accent);
+  opacity: 0.6;
+}
+
+.quick:hover:not(:disabled),
+.quick:focus-visible {
+  color: var(--accent);
+}
+
+.quick:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* --- Statuszeile ---------------------------------------------------------- */
+.statusline {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0 1rem;
+  overflow: hidden;
+  white-space: nowrap;
+  padding: 0.4rem clamp(0.75rem, 3vw, 2rem);
+  border-top: 1px solid var(--line);
+  background: var(--panel);
+  font-size: clamp(0.62rem, 2.2vw, 0.72rem);
+  letter-spacing: 0.06em;
+  color: var(--text-faint);
+}
+
+.statusline__tag {
+  padding: 0 0.45rem;
+  background: var(--accent);
+  color: #05060a;
+  font-weight: 700;
+}
+
+.statusline__cell {
+  display: inline-flex;
+  gap: 0.35rem;
+}
+
+.statusline__value { color: var(--text-dim); }
+
+.statusline__clock {
+  margin-inline-start: auto;
+  font-variant-numeric: tabular-nums;
+}
+
+.statusline[data-chaos='mid'] .statusline__cell--chaos .statusline__value { color: var(--amber); }
+.statusline[data-chaos='high'] .statusline__cell--chaos .statusline__value {
+  color: var(--red);
+  animation: soft-flicker 1.2s steps(2, end) infinite;
+}
+
+/* Schmale Geräte: Uhr weg, engere Abstände - die Zeile bleibt einzeilig. */
+@media (max-width: 30rem) {
+  .statusline {
+    gap: 0 0.6rem;
+    font-size: 0.62rem;
+  }
+
+  .statusline__clock { display: none; }
+}
