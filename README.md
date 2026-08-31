@@ -13,13 +13,41 @@ kommt aus dem Browser, die Wahl wird gespeichert.
 
 - Bei jedem Laden wird ein neuer Fehler gewürfelt (Code, technische Beschreibung
   und Witz werden unabhängig voneinander kombiniert).
-- Danach laufen alle paar Sekunden von selbst weitere Fehler durch – wie ein
+- Danach liefern die Knoten des Serverpools von selbst weitere Fehler – wie ein
   Log, das man offen liegen lässt.
 - Jeder Fehler bekommt eine eigene Error-ID (`ERR-7F3A-91C2`), eine Severity
   (`LOW` … `CRITICAL`, `probably fine`), ein Modul und einen Fake-Stacktrace.
 - Sehr selten (1 %) erscheint ein verstecktes Event. Eines davon behauptet
   kurz, alles sei repariert – und fällt dann zurück in den nächsten Fehler.
 - Dazu kommt das GLITCH UPDATE (siehe unten).
+
+## Multi Server 🖥️🖥️🖥️
+
+Fehler kommen nicht einfach so, sondern aus einem Pool von Knoten – natürlich
+erfundenen. Mehr Knoten heisst schlicht: mehr Fehler pro Minute.
+
+- **Seltene Fehler tauchen früher auf.** Sechs Knoten liefern gemessen rund
+  dreimal so viele Fehler wie einer – und damit dreimal so schnell die seltenen
+  Glitches. Wie viele du schon gesehen hast, zeigt `servers`.
+- **Überlastung trifft nur einen Knoten.** Jeder Knoten hat eine eigene Last;
+  sie steigt mit jedem Fehler und besonders bei `make it worse`. Ab 100 %
+  steigt genau dieser Knoten für ein paar Sekunden aus und startet neu – die
+  anderen laufen ungerührt weiter. Ist niemand sonst online, kommt er schneller
+  zurück.
+- **Unter Last wird es schneller.** Der Taktabstand eines Knotens sinkt mit
+  steigender Last von 7–14 s auf 1–2,4 s. Das Gerät merkt das.
+
+Damit die Seite dabei nicht wirklich zusammenbricht, gibt es harte Grenzen:
+höchstens 6 Knoten, ein globaler Mindestabstand von 380 ms zwischen zwei
+Fehlern, keine Ausgabe im Hintergrund-Tab und eine begrenzte Zeilenzahl im DOM.
+Gemessen kommen so höchstens ein bis zwei Fehler pro Sekunde an.
+
+```
+server pool
+  srv-01  eu-central-1   online      load  21%   errors 4
+  srv-02  us-east-2      rebooting   load   0%   errors 9
+  rare errors found: 2 / 11
+```
 
 ## Befehle
 
@@ -34,6 +62,9 @@ Eingeben oder unten anklicken:
 | `help` | Liste der Befehle |
 | `clear` | Bildschirm leeren |
 | `exit` | es gibt keinen Ausgang |
+| `servers` | Übersicht über den Serverpool |
+| `server add` | einen Knoten dazunehmen (max. 6) |
+| `server kill <id>` | einen Knoten abschalten |
 | `lang en` / `lang de` | Sprache umschalten |
 
 Unbekannte Eingaben werden mit `command not found` quittiert – und mit einem
@@ -100,6 +131,7 @@ src/
     GlitchOverlay.js       Scanlines, Flackern, Glitch-Stösse
   core/
     generator.js           baut aus den Daten einen kompletten Fehler
+    servers.js             der Serverpool (Takt, Last, Überlastung)
     i18n.js                Sprachumschaltung Englisch / Deutsch
     format.js              macht daraus fertige Terminalzeilen
     banner.js              Blockschrift für den grossen Fehlercode

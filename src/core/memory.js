@@ -15,6 +15,7 @@ const DEFAULTS = {
   visits: 0,
   worseCount: 0,
   secretsFound: [],
+  glitchesFound: [],
 };
 
 /** Liest den gespeicherten Zustand - fällt bei Problemen auf Defaults zurück. */

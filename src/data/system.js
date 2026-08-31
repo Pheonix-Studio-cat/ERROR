@@ -31,6 +31,16 @@ export const STACK_FRAMES = [
   { fn: 'panic', file: 'kernel/panic.js' },
 ];
 
+/** Regionen für die (natürlich erfundenen) Knoten des Serverpools. */
+export const REGIONS = [
+  'eu-central-1',
+  'us-east-2',
+  'ap-south-1',
+  'eu-west-3',
+  'us-west-1',
+  'sa-east-1',
+];
+
 /** Log-Level vor jedem Fehler - wie die Stufen in einem echten Systemlog. */
 export const LEVELS = ['FATAL', 'PANIC', 'ABORT', 'TRAP', 'SEGFAULT', 'CRASH'];
 

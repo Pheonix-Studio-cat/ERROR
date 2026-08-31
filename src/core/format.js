@@ -25,6 +25,8 @@ export function formatError(error) {
     [
       { text: `[${error.timestamp}] `, cls: 'dim' },
       { text: error.level, cls: 'accent' },
+      // Kommt der Fehler aus dem Serverpool, steht der Knoten dabei.
+      { text: error.source ? `  ${error.source}` : '', cls: 'faint' },
       { text: `  ERROR ${error.code}`, cls: 'accent bold' },
       { text: ` · ${error.title}` },
     ],

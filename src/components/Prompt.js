@@ -8,7 +8,7 @@ import { el } from '../core/dom.js';
 import { LANGUAGES } from '../core/i18n.js';
 
 /** Anklickbare Kurzbefehle - bewusst nur die Befehle, ohne Erklärung. */
-const QUICK_COMMANDS = ['try again', 'make it worse', "i don't care"];
+const QUICK_COMMANDS = ['try again', 'make it worse', "i don't care", 'server add'];
 
 /**
  * @param {object} handlers

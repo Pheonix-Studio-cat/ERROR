@@ -16,15 +16,16 @@ import { detectLanguage, getLanguage, setLanguage, t, text } from './core/i18n.j
 import { generateError } from './core/generator.js';
 import { loadMemory, saveMemory } from './core/memory.js';
 import { pick, randInt } from './core/random.js';
+import { MAX_SERVERS, createServerPool } from './core/servers.js';
+import { GLITCH_ERRORS } from './data/glitches.js';
 import { SNARK } from './data/responses.js';
 import { BOOT_LINES } from './data/system.js';
 
 /** Wie lange die Fake-Reparatur behauptet, alles sei in Ordnung. */
 const FAKE_FIX_MS = 2600;
 
-/** Abstand, in dem von selbst neue Fehler eintrudeln (ms). */
-const STREAM_MIN = 7000;
-const STREAM_MAX = 14000;
+/** Wie viele Glitch-Fehler es insgesamt zu entdecken gibt. */
+const GLITCH_COUNT = GLITCH_ERRORS.length;
 
 /** Statuswort je nach Chaos-Level. */
 const STATUS_LABELS = [
@@ -50,8 +51,6 @@ export function mountApp(mountPoint) {
     busy: false,
   };
 
-  let streamTimer = null;
-
   // --- Komponenten ---------------------------------------------------------
   const terminal = createTerminal();
   const prompt = createPrompt({ onSubmit: runCommand, onLanguage: changeLanguage });
@@ -66,6 +65,18 @@ export function mountApp(mountPoint) {
   // (für die kurzzeitige Textkorruption).
   const glitch = createGlitchEngine({ screen, output: terminal.out });
   screen.append(glitch.el);
+
+  // Der Serverpool liefert die Fehler, die von selbst eintrudeln.
+  const pool = createServerPool({
+    onError: (server) => showError(nextError('normal'), server.id),
+    onNotice: handleServerNotice,
+    onChange: updateStatus,
+  });
+
+  // Der erste Knoten existiert von Anfang an, liefert aber erst nach dem
+  // Startvorgang - sonst würde er in die Boot-Ausgabe hineinfunken.
+  pool.pause();
+  pool.add();
   mountPoint.replaceChildren(screen);
 
   // Wie in einem echten Terminal: ein Klick irgendwohin bringt den Cursor
@@ -101,7 +112,9 @@ export function mountApp(mountPoint) {
     await showError(
       generateError({ lastCode: memory.lastCode, lastJoke: memory.lastJoke }),
     );
-    scheduleStream();
+
+    // Ab jetzt liefert der Pool von selbst Fehler.
+    pool.resume();
   }
 
   // --- Befehle -------------------------------------------------------------
@@ -112,6 +125,7 @@ export function mountApp(mountPoint) {
     { names: ['make it worse', 'makeitworse', 'worse', 'w'], run: cmdWorse },
     { names: ["i don't care", 'i dont care', 'idc', 'ignore', 'i'], run: cmdIgnore },
     { names: ['fix', 'repair', 'sudo fix', 'reboot', 'restart'], run: cmdFix },
+    { names: ['servers', 'nodes', 'pool'], run: cmdServers },
     { names: ['help', '?', 'man', 'commands'], run: cmdHelp },
     { names: ['clear', 'cls'], run: cmdClear },
     { names: ['exit', 'quit', 'logout'], run: cmdExit },
@@ -134,26 +148,28 @@ export function mountApp(mountPoint) {
 
     const normalized = input.toLowerCase().replace(/[’`´]/g, "'").replace(/\s+/g, ' ');
 
-    // "lang de" / "lang en" wird vor der Befehlsliste behandelt (mit Argument).
+    // Befehle mit Argument werden vor der Liste behandelt.
     if (normalized === 'lang' || normalized.startsWith('lang ')) {
-      await cmdLang(normalized.slice(4).trim());
-      return scheduleStream();
+      return cmdLang(normalized.slice(4).trim());
+    }
+
+    if (normalized === 'server' || normalized.startsWith('server ')) {
+      return cmdServer(normalized.slice(6).trim());
     }
 
     const command = COMMANDS.find((entry) => entry.names.includes(normalized));
 
     if (command) {
       await command.run();
-    } else {
-      terminal.print([
-        { text: `command not found: ${input}`, cls: 'red' },
-        { text: t('notFoundHint'), cls: 'faint' },
-      ]);
-      terminal.print([]);
-      await showError(nextError('normal'));
+      return;
     }
 
-    scheduleStream();
+    terminal.print([
+      { text: `command not found: ${input}`, cls: 'red' },
+      { text: t('notFoundHint'), cls: 'faint' },
+    ]);
+    terminal.print([]);
+    await showError(nextError('normal'));
   }
 
   /** Schreibt die Eingabe als Prompt-Zeile ins Protokoll. */
@@ -186,6 +202,9 @@ export function mountApp(mountPoint) {
     overlay.burst('hard');
     setChaos(state.chaosLevel + randInt(14, 24));
     memory.worseCount += 1;
+
+    // Der Pool bekommt die Eskalation direkt zu spüren.
+    pool.boost(randInt(18, 30));
 
     terminal.print([
       {
@@ -227,7 +246,9 @@ export function mountApp(mountPoint) {
     terminal.print([{ text: t('helpHeader'), cls: 'faint' }]);
     terminal.print([
       {
-        text: "  try again   make it worse   i don't care   fix   clear   exit   lang en|de",
+        text:
+          "  try again   make it worse   i don't care   fix   clear   exit\n" +
+          '  servers   server add   server kill <id>   lang en|de',
         cls: 'dim',
       },
     ]);
@@ -273,7 +294,6 @@ export function mountApp(mountPoint) {
 
     terminal.print([{ text: t('langSet'), cls: 'green' }]);
     await showError(nextError('normal'));
-    scheduleStream();
   }
 
   // --- Fehlerausgabe -------------------------------------------------------
@@ -290,8 +310,10 @@ export function mountApp(mountPoint) {
   /**
    * Gibt einen Fehler im Terminal aus und aktualisiert Status und Speicher.
    * @param {object} error
+   * @param {string} [source] - Knoten des Serverpools, falls der Fehler dorther kommt
    */
-  async function showError(error) {
+  async function showError(error, source = null) {
+    error.source = source;
     state.current = error;
     state.errorCount += 1;
 
@@ -304,6 +326,7 @@ export function mountApp(mountPoint) {
 
     await terminal.printLines(formatError(error));
 
+    if (error.mode === 'glitch') rememberGlitch(error);
     if (error.mode === 'secret') await handleSecret(error);
     if (error.mode === 'glitch') await handleGlitch(error);
   }
@@ -318,7 +341,7 @@ export function mountApp(mountPoint) {
     if (isVoid) {
       state.busy = true;
       prompt.setBusy(true);
-      stopStream();
+      pool.pause();
     }
 
     await glitch.run(error);
@@ -333,7 +356,7 @@ export function mountApp(mountPoint) {
     await showError(
       generateError({ mode: 'normal', allowGlitch: false, allowSecret: false, lastCode: error.code }),
     );
-    scheduleStream();
+    pool.resume();
   }
 
   /** Die seltenen Glitch-Events (1 %). */
@@ -349,7 +372,7 @@ export function mountApp(mountPoint) {
     // Die Seite behauptet kurz, sie sei repariert - und fällt dann zurück.
     state.busy = true;
     prompt.setBusy(true);
-    stopStream();
+    pool.pause();
     terminal.print([{ text: 'all systems nominal', cls: 'green' }]);
     terminal.print([]);
 
@@ -362,23 +385,99 @@ export function mountApp(mountPoint) {
     terminal.print([{ text: 'nope. rolling back.', cls: 'red' }]);
 
     await showError(generateError({ mode: 'normal', allowSecret: false, lastCode: error.code }));
-    scheduleStream();
+    pool.resume();
   }
 
-  // --- Dauerbetrieb --------------------------------------------------------
+  // --- Serverpool ----------------------------------------------------------
 
-  /** Plant den nächsten Fehler, der ganz von selbst eintrudelt. */
-  function scheduleStream() {
-    stopStream();
-    streamTimer = setTimeout(async () => {
-      if (state.busy || document.hidden) return scheduleStream();
-      await showError(nextError('normal'));
-      scheduleStream();
-    }, randInt(STREAM_MIN, STREAM_MAX));
+  /** Zeigt den Pool: Knoten, Last, Fehlerzahl - plus die Glitch-Ausbeute. */
+  async function cmdServers() {
+    const servers = pool.list();
+
+    terminal.print([{ text: t('serversHeader'), cls: 'faint' }]);
+
+    servers.forEach((server) => {
+      terminal.print([
+        { text: `  ${server.id}  `, cls: 'cmd' },
+        { text: server.region.padEnd(14), cls: 'faint' },
+        {
+          text: server.state.padEnd(11),
+          cls: server.state === 'online' ? 'green' : 'amber',
+        },
+        { text: `load ${String(server.load).padStart(3)}%   `, cls: 'dim' },
+        { text: `errors ${server.errors}`, cls: 'faint' },
+      ]);
+    });
+
+    terminal.print([
+      { text: `  ${t('rareFound')}: `, cls: 'faint' },
+      { text: `${memory.glitchesFound.length} / ${GLITCH_COUNT}`, cls: 'accent' },
+    ]);
+
+    // Ab vier Knoten ist ein Hinweis fällig. Nur ein Hinweis.
+    if (servers.length >= 4) terminal.print([{ text: `  ${t('serversHint')}`, cls: 'dim' }]);
+    terminal.print([]);
   }
 
-  function stopStream() {
-    clearTimeout(streamTimer);
+  /** server add | server kill <id> */
+  async function cmdServer(argument) {
+    const [action, target] = argument.split(' ');
+
+    if (['add', 'spawn', 'new'].includes(action)) return addServer();
+    if (['kill', 'remove', 'stop'].includes(action)) return killServer(target);
+    return reply(t('serverUsage'), 'dim');
+  }
+
+  function addServer() {
+    const server = pool.add();
+
+    if (!server) return reply(t('serverFull'), 'amber');
+
+    terminal.print([
+      { text: `node ${server.id} spawned`, cls: 'green' },
+      { text: `   ${server.region}`, cls: 'faint' },
+    ]);
+
+    // Ab vier Knoten ein Hinweis, beim vollen Rack ein etwas deutlicherer.
+    if (pool.count() === MAX_SERVERS) {
+      terminal.print([{ text: t('serversMax'), cls: 'amber' }]);
+    } else if (pool.count() >= 4) {
+      terminal.print([{ text: t('serversHint'), cls: 'dim' }]);
+    }
+
+    terminal.print([]);
+    return undefined;
+  }
+
+  function killServer(id) {
+    if (!id) return reply(t('serverUsage'), 'dim');
+    if (!pool.has(id)) return reply(t('serverUnknown'), 'red');
+    if (pool.count() <= 1) return reply(t('serverLast'), 'amber');
+
+    const server = pool.kill(id);
+    if (!server) return reply(t('serverUnknown'), 'red');
+
+    reply(`node ${server.id} terminated`, 'red');
+    return undefined;
+  }
+
+  /** Meldungen aus dem Pool: Überlast und Rückkehr eines Knotens. */
+  function handleServerNotice(event, server) {
+    if (event === 'overload') {
+      overlay.burst();
+      terminal.print([
+        { text: `node ${server.id} overloaded. rebooting.`, cls: 'red' },
+        {
+          text: pool.count() > 1 ? '   the other nodes keep going.' : '',
+          cls: 'faint',
+        },
+      ]);
+      terminal.print([]);
+      return;
+    }
+
+    terminal.print([{ text: `node ${server.id} back online`, cls: 'green' }]);
+    terminal.print([]);
   }
 
   // --- Kleinkram -----------------------------------------------------------
@@ -393,7 +492,22 @@ export function mountApp(mountPoint) {
       errorCount: state.errorCount,
       chaosLevel: state.chaosLevel,
       label: STATUS_LABELS.find((entry) => state.chaosLevel >= entry.min).label,
+      nodeCount: pool.count(),
     });
+  }
+
+  /** Hält fest, welche Glitch-Fehler schon aufgetaucht sind (Sammelanreiz). */
+  function rememberGlitch(error) {
+    if (memory.glitchesFound.includes(error.code)) return;
+
+    memory.glitchesFound.push(error.code);
+    saveMemory(memory);
+    terminal.print([
+      {
+        text: `   ${t('rareFound')}: ${memory.glitchesFound.length} / ${GLITCH_COUNT}`,
+        cls: 'faint',
+      },
+    ]);
   }
 
   /** Merkt sich, was beim nächsten Laden nicht wiederholt werden soll. */
