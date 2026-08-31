@@ -28,10 +28,20 @@ export function createTerminal() {
 
   /**
    * Hängt eine einzelne Zeile an.
+   *
+   * Läuft gerade ein gestaffelter Block, wird dieser zuerst fertig geschrieben -
+   * sonst landet die neue Zeile mitten in einem Fehlerblock.
+   *
    * @param {Array<{text: string, cls?: string}>|string} line
    * @returns {HTMLElement} die erzeugte Zeile (für den Tipp-Effekt)
    */
   function print(line) {
+    flush();
+    return appendLine(line);
+  }
+
+  /** Der eigentliche Anhang - ohne Rücksicht auf laufende Blöcke. */
+  function appendLine(line) {
     const segments = typeof line === 'string' ? [{ text: line }] : line;
 
     const node = el(
@@ -46,27 +56,58 @@ export function createTerminal() {
     return node;
   }
 
+  /** Die gerade laufende, gestaffelte Ausgabe (immer höchstens eine). */
+  let running = null;
+
   /**
    * Gibt mehrere Zeilen nacheinander aus - das erzeugt den "Log läuft"-Effekt.
+   *
+   * Läuft noch eine ältere Ausgabe, wird diese sofort zu Ende geschrieben.
+   * Sonst würden sich zwei Blöcke ineinander schieben (etwa wenn der
+   * Dauerbetrieb feuert, während gerade ein Befehl ausgegeben wird).
+   *
    * @returns {Promise<void>} erfüllt, wenn die letzte Zeile steht
    */
   function printLines(lines) {
+    flush();
+
     if (prefersReducedMotion()) {
-      lines.forEach(print);
+      lines.forEach(appendLine);
       return Promise.resolve();
     }
 
     return new Promise((resolve) => {
-      let index = 0;
-      const timer = setInterval(() => {
-        print(lines[index]);
-        index += 1;
-        if (index >= lines.length) {
-          clearInterval(timer);
-          resolve();
-        }
+      const job = { lines, index: 0, resolve, timer: null };
+
+      job.timer = setInterval(() => {
+        appendLine(job.lines[job.index]);
+        job.index += 1;
+        if (job.index >= job.lines.length) finish(job);
       }, LINE_DELAY);
+
+      running = job;
     });
+  }
+
+  /** Schreibt eine noch laufende Ausgabe sofort fertig. */
+  function flush() {
+    if (!running) return;
+
+    const job = running;
+    running = null; // erst freigeben, damit appendLine nicht erneut flusht
+    clearInterval(job.timer);
+
+    while (job.index < job.lines.length) {
+      appendLine(job.lines[job.index]);
+      job.index += 1;
+    }
+    finish(job);
+  }
+
+  function finish(job) {
+    clearInterval(job.timer);
+    if (running === job) running = null;
+    job.resolve();
   }
 
   /**
@@ -99,6 +140,7 @@ export function createTerminal() {
 
   /** Leert den Bildschirm (Befehl "clear"). */
   function clear() {
+    flush();
     out.replaceChildren();
   }
 
@@ -106,5 +148,5 @@ export function createTerminal() {
     root.scrollTop = root.scrollHeight;
   }
 
-  return { el: root, attachPrompt, print, printLines, typeInto, clear, scrollToEnd };
+  return { el: root, out, attachPrompt, print, printLines, typeInto, clear, scrollToEnd };
 }

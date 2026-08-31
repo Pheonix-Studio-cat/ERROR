@@ -1,9 +1,9 @@
 /**
  * Katalog der (Fake-)Fehlercodes.
  *
- * Jeder Eintrag ist bewusst "echt genug", damit die Seite wie eine kaputte
- * System-Seite wirkt. `title` ist die technische Kurzbeschreibung, `detail`
- * die pseudo-technische Zusatzzeile.
+ * `title` ist die technische Kurzbeschreibung (bleibt englisch, wie im echten
+ * HTTP-Standard), `detail` die pseudo-technische Zusatzzeile - die gibt es
+ * zweisprachig, passend zum Sprachumschalter.
  *
  * WICHTIG: Hier passiert nichts Echtes - kein Request, kein Server, kein Fehler.
  */
@@ -11,122 +11,194 @@ export const ERROR_CODES = [
   {
     code: '400',
     title: 'Bad Request.',
-    detail: 'Der Client hat etwas gesendet, das niemand verstehen wollte.',
+    detail: {
+      en: 'The client sent something nobody wanted to understand.',
+      de: 'Der Client hat etwas gesendet, das niemand verstehen wollte.',
+    },
   },
   {
     code: '401',
     title: 'Unauthorized.',
-    detail: 'Es fehlt ein Token, das es vermutlich nie gegeben hat.',
+    detail: {
+      en: 'A token is missing that probably never existed.',
+      de: 'Es fehlt ein Token, das es vermutlich nie gegeben hat.',
+    },
   },
   {
     code: '402',
     title: 'Payment Required.',
-    detail: 'Abrechnungsmodul aktiviert. Aus Versehen.',
+    detail: {
+      en: 'Billing module activated. By accident.',
+      de: 'Abrechnungsmodul aktiviert. Aus Versehen.',
+    },
   },
   {
     code: '403',
     title: 'Forbidden.',
-    detail: 'Zugriff verweigert. Grund: unbekannt, aber sehr bestimmt.',
+    detail: {
+      en: 'Access denied. Reason: unknown, but very firm.',
+      de: 'Zugriff verweigert. Grund: unbekannt, aber sehr bestimmt.',
+    },
   },
   {
     code: '404',
     title: 'Page not found.',
-    detail: 'Die angeforderte Ressource existiert in diesem Universum nicht.',
+    detail: {
+      en: 'The requested resource does not exist in this universe.',
+      de: 'Die angeforderte Ressource existiert in diesem Universum nicht.',
+    },
   },
   {
     code: '405',
     title: 'Method Not Allowed.',
-    detail: 'Die Methode ist erlaubt. Nur eben nicht hier. Und nicht jetzt.',
+    detail: {
+      en: 'The method is allowed. Just not here. And not now.',
+      de: 'Die Methode ist erlaubt. Nur eben nicht hier. Und nicht jetzt.',
+    },
   },
   {
     code: '408',
     title: 'Request Timeout.',
-    detail: 'Der Server hat 30 Sekunden gewartet und dann aufgegeben.',
+    detail: {
+      en: 'The server waited 30 seconds and then gave up.',
+      de: 'Der Server hat 30 Sekunden gewartet und dann aufgegeben.',
+    },
   },
   {
     code: '409',
     title: 'Conflict.',
-    detail: 'Zwei Prozesse behaupten gleichzeitig, Recht zu haben.',
+    detail: {
+      en: 'Two processes claim to be right at the same time.',
+      de: 'Zwei Prozesse behaupten gleichzeitig, Recht zu haben.',
+    },
   },
   {
     code: '410',
     title: 'Gone.',
-    detail: 'War mal da. Ist jetzt weg. Endgültig.',
+    detail: {
+      en: 'It was here once. Now it is gone. For good.',
+      de: 'War mal da. Ist jetzt weg. Endgültig.',
+    },
   },
   {
     code: '413',
     title: 'Payload Too Large.',
-    detail: 'Der Request wog mehr als der gesamte Arbeitsspeicher.',
+    detail: {
+      en: 'The request weighed more than the entire memory.',
+      de: 'Der Request wog mehr als der gesamte Arbeitsspeicher.',
+    },
   },
   {
     code: '418',
     title: "I'm a teapot.",
-    detail: 'Der Server weigert sich, Kaffee zu kochen. Aus Prinzip.',
+    detail: {
+      en: 'The server refuses to brew coffee. On principle.',
+      de: 'Der Server weigert sich, Kaffee zu kochen. Aus Prinzip.',
+    },
   },
   {
     code: '420',
     title: 'Enhance Your Calm.',
-    detail: 'Der Server bittet um etwas weniger Enthusiasmus.',
+    detail: {
+      en: 'The server would like slightly less enthusiasm.',
+      de: 'Der Server bittet um etwas weniger Enthusiasmus.',
+    },
   },
   {
     code: '423',
     title: 'Locked.',
-    detail: 'Ressource gesperrt. Schlüssel liegt im gesperrten Ordner.',
+    detail: {
+      en: 'Resource locked. The key is inside the locked folder.',
+      de: 'Ressource gesperrt. Schlüssel liegt im gesperrten Ordner.',
+    },
   },
   {
     code: '429',
     title: 'Too Many Requests.',
-    detail: 'Rate Limit erreicht. Und zwar deutlich.',
+    detail: {
+      en: 'Rate limit reached. By a wide margin.',
+      de: 'Rate Limit erreicht. Und zwar deutlich.',
+    },
   },
   {
     code: '451',
     title: 'Unavailable For Legal Reasons.',
-    detail: 'Die Rechtsabteilung hat entschieden. Ohne uns zu fragen.',
+    detail: {
+      en: 'Legal has decided. Without asking us.',
+      de: 'Die Rechtsabteilung hat entschieden. Ohne uns zu fragen.',
+    },
   },
   {
     code: '500',
     title: 'Internal Server Error.',
-    detail: 'Unbehandelte Ausnahme in einem Modul, das niemand geschrieben hat.',
+    detail: {
+      en: 'Unhandled exception in a module nobody wrote.',
+      de: 'Unbehandelte Ausnahme in einem Modul, das niemand geschrieben hat.',
+    },
   },
   {
     code: '501',
     title: 'Not Implemented.',
-    detail: 'Das Feature steht im Ticket. Seit 2019.',
+    detail: {
+      en: 'The feature is in the backlog. Since 2019.',
+      de: 'Das Feature steht im Ticket. Seit 2019.',
+    },
   },
   {
     code: '502',
     title: 'Bad Gateway.',
-    detail: 'Upstream-Server antwortete mit ratlosem Schweigen.',
+    detail: {
+      en: 'Upstream server responded with puzzled silence.',
+      de: 'Upstream-Server antwortete mit ratlosem Schweigen.',
+    },
   },
   {
     code: '503',
     title: 'Service Unavailable.',
-    detail: 'Der Dienst ist temporär nicht erreichbar. Sehr temporär. Angeblich.',
+    detail: {
+      en: 'The service is temporarily unavailable. Very temporarily. Allegedly.',
+      de: 'Der Dienst ist temporär nicht erreichbar. Sehr temporär. Angeblich.',
+    },
   },
   {
     code: '504',
     title: 'Gateway Timeout.',
-    detail: 'Irgendwo zwischen hier und dort ist ein Paket verloren gegangen.',
+    detail: {
+      en: 'Somewhere between here and there a packet went missing.',
+      de: 'Irgendwo zwischen hier und dort ist ein Paket verloren gegangen.',
+    },
   },
   {
     code: '507',
     title: 'Insufficient Storage.',
-    detail: 'Speicher voll. Hauptsächlich mit Logs über vollen Speicher.',
+    detail: {
+      en: 'Storage full. Mostly with logs about full storage.',
+      de: 'Speicher voll. Hauptsächlich mit Logs über vollen Speicher.',
+    },
   },
   {
     code: '508',
     title: 'Loop Detected.',
-    detail: 'Loop Detected. Loop Detected. Loop Detected.',
+    detail: {
+      en: 'Loop detected. Loop detected. Loop detected.',
+      de: 'Loop Detected. Loop Detected. Loop Detected.',
+    },
   },
   {
     code: '511',
     title: 'Network Authentication Required.',
-    detail: 'Das Netzwerk möchte sich erst einmal vorstellen.',
+    detail: {
+      en: 'The network would like to introduce itself first.',
+      de: 'Das Netzwerk möchte sich erst einmal vorstellen.',
+    },
   },
   {
     code: '522',
     title: 'Connection Timed Out.',
-    detail: 'Die Verbindung stand kurz. Dann hat sie es sich anders überlegt.',
+    detail: {
+      en: 'The connection held for a moment. Then it changed its mind.',
+      de: 'Die Verbindung stand kurz. Dann hat sie es sich anders überlegt.',
+    },
   },
 ];
 

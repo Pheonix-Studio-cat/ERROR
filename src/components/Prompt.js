@@ -5,15 +5,17 @@
  * darüber, damit Tastatur, Fokus und mobile Eingabe normal funktionieren.
  */
 import { el } from '../core/dom.js';
+import { LANGUAGES } from '../core/i18n.js';
 
 /** Anklickbare Kurzbefehle - bewusst nur die Befehle, ohne Erklärung. */
 const QUICK_COMMANDS = ['try again', 'make it worse', "i don't care"];
 
 /**
  * @param {object} handlers
- * @param {(value: string) => void} handlers.onSubmit - Befehl abgeschickt
+ * @param {(value: string) => void} handlers.onSubmit   - Befehl abgeschickt
+ * @param {(lang: string) => void} handlers.onLanguage  - Sprache umgeschaltet
  */
-export function createPrompt({ onSubmit }) {
+export function createPrompt({ onSubmit, onLanguage }) {
   const mirror = el('span', { class: 'prompt__text' });
   const caret = el('span', { class: 'prompt__caret', attrs: { 'aria-hidden': 'true' } });
 
@@ -49,6 +51,26 @@ export function createPrompt({ onSubmit }) {
       }),
     ),
   );
+
+  // Sprachfeld direkt neben den Schnellbefehlen.
+  const langButtons = LANGUAGES.map((lang) =>
+    el('button', {
+      class: 'lang',
+      type: 'button',
+      text: lang,
+      attrs: { 'data-lang': lang },
+      on: { click: () => onLanguage(lang) },
+    }),
+  );
+
+  const langField = el('span', { class: 'langfield' }, [
+    el('span', { class: 'langfield__key', text: 'lang:' }),
+    ...langButtons.flatMap((button, index) =>
+      index === 0 ? [button] : [el('span', { class: 'langfield__sep', text: '/' }), button],
+    ),
+  ]);
+
+  quick.append(langField);
 
   const root = el('div', { class: 'prompt' }, [line, quick]);
 
@@ -89,5 +111,13 @@ export function createPrompt({ onSubmit }) {
     if (!busy) focus();
   }
 
-  return { el: root, focus, setBusy };
+  /** Hebt die aktive Sprache im Sprachfeld hervor. */
+  function setLanguage(lang) {
+    langButtons.forEach((button) => {
+      button.classList.toggle('is-active', button.dataset.lang === lang);
+      button.setAttribute('aria-pressed', String(button.dataset.lang === lang));
+    });
+  }
+
+  return { el: root, focus, setBusy, setLanguage };
 }

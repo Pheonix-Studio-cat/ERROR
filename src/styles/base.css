@@ -42,6 +42,7 @@
 [data-tone='fine'] { --accent: var(--cyan); --accent-soft: rgba(70 224 255 / 0.14); }
 [data-tone='secret'] { --accent: var(--violet); --accent-soft: rgba(176 133 255 / 0.16); }
 [data-tone='ok'] { --accent: var(--green); --accent-soft: rgba(53 208 127 / 0.15); }
+[data-tone='glitch'] { --accent: #ff4fd8; --accent-soft: rgba(255 79 216 / 0.16); }
 
 *,
 *::before,

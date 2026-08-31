@@ -5,12 +5,14 @@
  * durch, und man kann Befehle eingeben. Es passiert dabei nichts Echtes -
  * kein Request, kein Server, kein echter Fehler. Alles ist Theater.
  */
+import { createGlitchEngine } from './components/GlitchEngine.js';
 import { createGlitchOverlay } from './components/GlitchOverlay.js';
 import { createPrompt } from './components/Prompt.js';
 import { createStatusLine } from './components/StatusLine.js';
 import { createTerminal } from './components/Terminal.js';
 import { el, prefersReducedMotion } from './core/dom.js';
 import { formatError } from './core/format.js';
+import { detectLanguage, getLanguage, setLanguage, t, text } from './core/i18n.js';
 import { generateError } from './core/generator.js';
 import { loadMemory, saveMemory } from './core/memory.js';
 import { pick, randInt } from './core/random.js';
@@ -38,6 +40,9 @@ export function mountApp(mountPoint) {
   const memory = loadMemory();
   memory.visits += 1;
 
+  // Sprache: gespeicherte Wahl, sonst die Browsersprache.
+  setLanguage(memory.lang ?? detectLanguage());
+
   const state = {
     errorCount: 0,
     chaosLevel: 0,
@@ -49,13 +54,18 @@ export function mountApp(mountPoint) {
 
   // --- Komponenten ---------------------------------------------------------
   const terminal = createTerminal();
-  const prompt = createPrompt({ onSubmit: runCommand });
+  const prompt = createPrompt({ onSubmit: runCommand, onLanguage: changeLanguage });
   const statusLine = createStatusLine();
   const overlay = createGlitchOverlay();
 
   terminal.attachPrompt(prompt.el);
 
   const screen = el('div', { class: 'screen' }, [terminal.el, statusLine.el, overlay.el]);
+
+  // Die Glitch-Effekte brauchen den Screen (für die Klassen) und die Ausgabe
+  // (für die kurzzeitige Textkorruption).
+  const glitch = createGlitchEngine({ screen, output: terminal.out });
+  screen.append(glitch.el);
   mountPoint.replaceChildren(screen);
 
   // Wie in einem echten Terminal: ein Klick irgendwohin bringt den Cursor
@@ -67,6 +77,7 @@ export function mountApp(mountPoint) {
   });
 
   statusLine.startClock();
+  prompt.setLanguage(getLanguage());
   updateStatus();
   boot();
 
@@ -78,7 +89,7 @@ export function mountApp(mountPoint) {
 
     await terminal.printLines([
       [{ text: 'error.sys 0.9.1-beta', cls: 'accent bold' }],
-      [{ text: 'Nur Fehler. Rund um die Uhr.', cls: 'faint' }],
+      [{ text: t('tagline'), cls: 'faint' }],
       [],
       ...BOOT_LINES.map((line) => [{ text: line, cls: 'dim' }]),
       [],
@@ -104,11 +115,11 @@ export function mountApp(mountPoint) {
     { names: ['help', '?', 'man', 'commands'], run: cmdHelp },
     { names: ['clear', 'cls'], run: cmdClear },
     { names: ['exit', 'quit', 'logout'], run: cmdExit },
-    { names: ['sudo'], run: () => reply('Nice try.') },
-    { names: ['ls', 'dir'], run: () => reply('errors/   errors.bak/   errors_final/   errors_final_2/') },
-    { names: ['whoami'], run: () => reply('jemand, der gerade eine kaputte Seite anschaut') },
-    { names: ['pwd'], run: () => reply('/var/log/nichts') },
-    { names: ['cat'], run: () => reply('miau') },
+    { names: ['sudo'], run: () => reply(t('sudo')) },
+    { names: ['ls', 'dir'], run: () => reply(t('ls')) },
+    { names: ['whoami'], run: () => reply(t('whoami')) },
+    { names: ['pwd'], run: () => reply(t('pwd')) },
+    { names: ['cat'], run: () => reply(t('cat')) },
   ];
 
   /**
@@ -122,6 +133,13 @@ export function mountApp(mountPoint) {
     echo(input);
 
     const normalized = input.toLowerCase().replace(/[’`´]/g, "'").replace(/\s+/g, ' ');
+
+    // "lang de" / "lang en" wird vor der Befehlsliste behandelt (mit Argument).
+    if (normalized === 'lang' || normalized.startsWith('lang ')) {
+      await cmdLang(normalized.slice(4).trim());
+      return scheduleStream();
+    }
+
     const command = COMMANDS.find((entry) => entry.names.includes(normalized));
 
     if (command) {
@@ -129,7 +147,7 @@ export function mountApp(mountPoint) {
     } else {
       terminal.print([
         { text: `command not found: ${input}`, cls: 'red' },
-        { text: '   (es gibt hier ohnehin nur Fehler)', cls: 'faint' },
+        { text: t('notFoundHint'), cls: 'faint' },
       ]);
       terminal.print([]);
       await showError(nextError('normal'));
@@ -186,11 +204,11 @@ export function mountApp(mountPoint) {
   /** i don't care - freche Antwort, sonst passiert (fast) nichts. */
   async function cmdIgnore() {
     setChaos(state.chaosLevel + 2);
-    reply(pick(SNARK), 'cyan');
+    reply(text(pick(SNARK)), 'cyan');
 
     // Manchmal reagiert das System beleidigt und wirft trotzdem einen Fehler.
     if (Math.random() < 0.2) {
-      terminal.print([{ text: 'trotzdem:', cls: 'faint' }]);
+      terminal.print([{ text: t('anyway'), cls: 'faint' }]);
       await showError(nextError('normal'));
     }
   }
@@ -199,29 +217,63 @@ export function mountApp(mountPoint) {
   async function cmdFix() {
     overlay.burst('hard');
     terminal.print([{ text: 'applying fix ...', cls: 'dim' }]);
-    terminal.print([{ text: 'fix applied to the wrong module', cls: 'red' }]);
+    terminal.print([{ text: t('fixApplied'), cls: 'red' }]);
     setChaos(state.chaosLevel + 10);
     await showError(nextError('chaos'));
   }
 
   /** help - nur die Befehle, ohne Erklärungen. */
   async function cmdHelp() {
-    terminal.print([{ text: 'available commands', cls: 'faint' }]);
+    terminal.print([{ text: t('helpHeader'), cls: 'faint' }]);
     terminal.print([
-      { text: '  try again   make it worse   i don\'t care   fix   clear   exit', cls: 'dim' },
+      {
+        text: "  try again   make it worse   i don't care   fix   clear   exit   lang en|de",
+        cls: 'dim',
+      },
     ]);
     terminal.print([]);
   }
 
+  /**
+   * lang - schaltet zwischen Englisch und Deutsch um.
+   * Ohne Argument wird nur die aktuelle Sprache gemeldet.
+   */
+  async function cmdLang(argument) {
+    if (!argument) return reply(`${t('langSet')}   ${t('langUsage')}`, 'dim');
+    if (!['en', 'de'].includes(argument)) return reply(t('langUsage'), 'red');
+    return changeLanguage(argument);
+  }
+
   async function cmdClear() {
     terminal.clear();
-    terminal.print([{ text: 'screen cleared. errors not.', cls: 'faint' }]);
+    terminal.print([{ text: t('cleared'), cls: 'faint' }]);
     terminal.print([]);
   }
 
   async function cmdExit() {
-    reply('Es gibt keinen Ausgang. Nur weitere Fehler.', 'red');
+    reply(t('exitReply'), 'red');
     await showError(nextError('normal'));
+  }
+
+  /**
+   * Wechselt die Sprache. Bereits ausgegebene Zeilen bleiben stehen - ein
+   * Terminal schreibt sein Protokoll ja auch nicht nachträglich um. Alles
+   * Weitere erscheint in der neuen Sprache, beginnend mit einem frischen Fehler.
+   */
+  async function changeLanguage(lang) {
+    if (state.busy) return;
+
+    const changed = setLanguage(lang);
+    prompt.setLanguage(getLanguage());
+
+    if (!changed) return;
+
+    memory.lang = lang;
+    saveMemory(memory);
+
+    terminal.print([{ text: t('langSet'), cls: 'green' }]);
+    await showError(nextError('normal'));
+    scheduleStream();
   }
 
   // --- Fehlerausgabe -------------------------------------------------------
@@ -253,6 +305,35 @@ export function mountApp(mountPoint) {
     await terminal.printLines(formatError(error));
 
     if (error.mode === 'secret') await handleSecret(error);
+    if (error.mode === 'glitch') await handleGlitch(error);
+  }
+
+  /**
+   * Die seltenen Glitch-Fehler: kurze Bildstörung, danach ist alles wieder sauber.
+   * Nur der extrem seltene Void sperrt kurz die Eingabe - der Screen ist ja weg.
+   */
+  async function handleGlitch(error) {
+    const isVoid = error.effects.includes('void');
+
+    if (isVoid) {
+      state.busy = true;
+      prompt.setBusy(true);
+      stopStream();
+    }
+
+    await glitch.run(error);
+
+    if (!isVoid) return;
+
+    state.busy = false;
+    prompt.setBusy(false);
+    terminal.print([{ text: 'signal restored', cls: 'dim' }]);
+
+    // Danach geht es mit einer ganz normalen Fehlerseite weiter.
+    await showError(
+      generateError({ mode: 'normal', allowGlitch: false, allowSecret: false, lastCode: error.code }),
+    );
+    scheduleStream();
   }
 
   /** Die seltenen Glitch-Events (1 %). */

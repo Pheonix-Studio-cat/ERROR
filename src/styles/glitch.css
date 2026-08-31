@@ -1,0 +1,146 @@
+/* =============================================================
+   glitch.css - die Effekte des GLITCH UPDATE.
+
+   Alle Effekte sind kurz, laufen genau einmal ("both" statt "infinite")
+   und arbeiten nur mit transform, opacity und text-shadow. Es gibt keinen
+   Dauerzustand: Die Klassen werden von der GlitchEngine wieder entfernt.
+   ============================================================= */
+
+/* --- Overlay für Blackout und den extrem seltenen Void -------------------- */
+.gfx {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  background: #000;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.1s linear;
+}
+
+.gfx.is-black,
+.gfx.is-void {
+  opacity: 1;
+  visibility: visible;
+}
+
+.gfx__void {
+  margin: 0;
+  color: var(--text-dim);
+  font-family: var(--mono);
+  font-size: clamp(0.85rem, 3.2vw, 1.05rem);
+  line-height: 2;
+  text-align: center;
+  white-space: pre;
+}
+
+/* --- RGB-Split ------------------------------------------------------------ */
+@keyframes gfx-rgb {
+  0%, 100% { text-shadow: none; }
+  15% { text-shadow: 2px 0 rgba(255 0 70 / 0.75), -2px 0 rgba(0 225 255 / 0.7); }
+  35% { text-shadow: -3px 0 rgba(255 0 70 / 0.7), 3px 0 rgba(0 225 255 / 0.65); }
+  55% { text-shadow: 1px 0 rgba(255 0 70 / 0.6), -1px 0 rgba(0 225 255 / 0.6); }
+  75% { text-shadow: -2px 0 rgba(255 0 70 / 0.5), 2px 0 rgba(0 225 255 / 0.5); }
+}
+
+.gfx-rgb .term,
+.gfx-rgb .statusline {
+  animation: gfx-rgb 0.7s steps(2, end) both;
+}
+
+/* --- Text-Jitter ---------------------------------------------------------- */
+@keyframes gfx-jitter {
+  0%, 100% { transform: none; }
+  20% { transform: translate(-1px, 1px); }
+  40% { transform: translate(2px, -1px); }
+  60% { transform: translate(-2px, 0); }
+  80% { transform: translate(1px, 1px); }
+}
+
+@keyframes gfx-jitter-line {
+  0%, 100% { transform: none; }
+  30% { transform: translateX(3px); }
+  70% { transform: translateX(-2px); }
+}
+
+.gfx-jitter .term { animation: gfx-jitter 0.6s steps(2, end) both; }
+
+/* Nur jede vierte Zeile zittert einzeln - das reicht und bleibt günstig. */
+.gfx-jitter .term__line:nth-child(4n) {
+  animation: gfx-jitter-line 0.6s steps(2, end) both;
+}
+
+/* --- Horizontale Bildverschiebung (Slices) -------------------------------- */
+@keyframes gfx-slice-left {
+  0%, 100% { transform: none; }
+  15% { transform: translateX(-22px); }
+  30% { transform: translateX(6px); }
+  55% { transform: translateX(-12px); }
+  70% { transform: none; }
+}
+
+@keyframes gfx-slice-right {
+  0%, 100% { transform: none; }
+  20% { transform: translateX(18px); }
+  40% { transform: translateX(-8px); }
+  60% { transform: translateX(10px); }
+  80% { transform: none; }
+}
+
+.gfx-tear .term__line:nth-child(5n + 1) {
+  animation: gfx-slice-left 0.7s steps(2, end) both;
+}
+
+.gfx-tear .term__line:nth-child(5n + 3) {
+  animation: gfx-slice-right 0.7s steps(2, end) both;
+}
+
+/* --- Einzelne UI-Elemente verrutschen ------------------------------------- */
+@keyframes gfx-shift-a {
+  0%, 100% { transform: none; }
+  25% { transform: translate(-10px, 2px); }
+  60% { transform: translate(6px, -2px); }
+}
+
+@keyframes gfx-shift-b {
+  0%, 100% { transform: none; }
+  35% { transform: translate(12px, -3px); }
+  70% { transform: translate(-5px, 2px); }
+}
+
+.gfx-shift .statusline { animation: gfx-shift-a 0.6s steps(2, end) both; }
+.gfx-shift .prompt { animation: gfx-shift-b 0.6s steps(2, end) both; }
+
+/* --- ERROR 67: der ganze Screen schaukelt --------------------------------- */
+@keyframes gfx-sway {
+  0% { transform: rotate(0deg) translateX(0); }
+  12% { transform: rotate(-2.4deg) translateX(-16px); }
+  28% { transform: rotate(2.1deg) translateX(14px); }
+  44% { transform: rotate(-1.6deg) translateX(-10px); }
+  60% { transform: rotate(1.2deg) translateX(8px); }
+  76% { transform: rotate(-0.7deg) translateX(-4px); }
+  90% { transform: rotate(0.3deg) translateX(2px); }
+  100% { transform: rotate(0deg) translateX(0); }
+}
+
+.screen.gfx-sway {
+  transform-origin: 50% 0;
+  animation: gfx-sway 2.4s cubic-bezier(0.37, 0, 0.63, 1) both;
+}
+
+/* --- Bewegung reduzieren: gar keine Störungen ----------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .gfx-rgb .term,
+  .gfx-rgb .statusline,
+  .gfx-jitter .term,
+  .gfx-jitter .term__line:nth-child(4n),
+  .gfx-tear .term__line:nth-child(5n + 1),
+  .gfx-tear .term__line:nth-child(5n + 3),
+  .gfx-shift .statusline,
+  .gfx-shift .prompt,
+  .screen.gfx-sway {
+    animation: none !important;
+  }
+}
