@@ -107,21 +107,6 @@ export const GLITCH_ERRORS = [
     chance: 0.025,
     effects: ['sway'],
   },
-  {
-    code: '666',
-    title: 'VISUAL CORRUPTION',
-    detail: {
-      en: 'A dependency from 2013 woke up and repainted everything.',
-      de: 'Eine Abhängigkeit von 2013 ist erwacht und hat alles neu eingefärbt.',
-    },
-    joke: {
-      en: ['Do not look directly at the screen.', 'It gets encouraged by that.'],
-      de: ['Schau nicht direkt auf den Bildschirm.', 'Das ermutigt ihn nur.'],
-    },
-    tier: 'rare',
-    chance: 0.02,
-    effects: ['tear', 'rgb'],
-  },
 
   // --- sehr selten: 0.5-2 % -------------------------------------------------
   {

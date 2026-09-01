@@ -93,15 +93,16 @@ export function createServerPool({ onError, onNotice, onChange }) {
   /**
    * Erhöht die Last nach "make it worse".
    *
-   * Der Schlag trifft bewusst nur einen Knoten voll; die übrigen bekommen
-   * einen Bruchteil ab. So fällt immer nur einer aus, während der Rest
-   * weiterläuft - genau darum gibt es ja mehrere.
+   * Der Schlag trifft bewusst nur einen Knoten voll - und zwar den, der ohnehin
+   * schon am meisten zu tun hat. Wer mehrfach eskaliert, legt damit zuverlässig
+   * einen Knoten lahm, während die übrigen nur einen Bruchteil abbekommen und
+   * weiterlaufen. Genau dafür gibt es ja mehrere.
    */
   function boost(amount) {
     const online = servers.filter((server) => server.state === 'online');
     if (online.length === 0) return;
 
-    const target = online[randInt(0, online.length - 1)];
+    const target = online.reduce((worst, server) => (server.load > worst.load ? server : worst));
 
     online.forEach((server) => {
       raiseLoad(server, server === target ? amount : Math.round(amount / 5));

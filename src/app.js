@@ -24,8 +24,9 @@ import { BOOT_LINES } from './data/system.js';
 /** Wie lange die Fake-Reparatur behauptet, alles sei in Ordnung. */
 const FAKE_FIX_MS = 2600;
 
-/** Wie viele Glitch-Fehler es insgesamt zu entdecken gibt. */
-const GLITCH_COUNT = GLITCH_ERRORS.length;
+/** Alle Glitch-Codes, die es aktuell zu entdecken gibt. */
+const GLITCH_CODES = GLITCH_ERRORS.map((glitch) => glitch.code);
+const GLITCH_COUNT = GLITCH_CODES.length;
 
 /** Statuswort je nach Chaos-Level. */
 const STATUS_LABELS = [
@@ -411,7 +412,7 @@ export function mountApp(mountPoint) {
 
     terminal.print([
       { text: `  ${t('rareFound')}: `, cls: 'faint' },
-      { text: `${memory.glitchesFound.length} / ${GLITCH_COUNT}`, cls: 'accent' },
+      { text: `${foundCount()} / ${GLITCH_COUNT}`, cls: 'accent' },
     ]);
 
     // Ab vier Knoten ist ein Hinweis fällig. Nur ein Hinweis.
@@ -503,11 +504,16 @@ export function mountApp(mountPoint) {
     memory.glitchesFound.push(error.code);
     saveMemory(memory);
     terminal.print([
-      {
-        text: `   ${t('rareFound')}: ${memory.glitchesFound.length} / ${GLITCH_COUNT}`,
-        cls: 'faint',
-      },
+      { text: `   ${t('rareFound')}: ${foundCount()} / ${GLITCH_COUNT}`, cls: 'faint' },
     ]);
+  }
+
+  /**
+   * Zählt nur Codes, die es noch gibt - ein alter Eintrag aus dem Speicher
+   * soll den Zähler nicht über das Maximum treiben.
+   */
+  function foundCount() {
+    return memory.glitchesFound.filter((code) => GLITCH_CODES.includes(code)).length;
   }
 
   /** Merkt sich, was beim nächsten Laden nicht wiederholt werden soll. */

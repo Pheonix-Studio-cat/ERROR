@@ -46,7 +46,7 @@ Gemessen kommen so höchstens ein bis zwei Fehler pro Sekunde an.
 server pool
   srv-01  eu-central-1   online      load  21%   errors 4
   srv-02  us-east-2      rebooting   load   0%   errors 9
-  rare errors found: 2 / 11
+  rare errors found: 2 / 10
 ```
 
 ## Befehle
@@ -84,14 +84,13 @@ rund drei Vierteln aller Fälle so.
 | selten | `RGB` COLOR CORRUPTION | 3,5 % | RGB-Split + Jitter |
 | selten | `???` DATA CORRUPTION | 2,8 % | Zeichenkorruption |
 | selten | `67` SIX SEVEN | 2,5 % | der ganze Screen schaukelt |
-| selten | `666` VISUAL CORRUPTION | 2 % | Bildverschiebung + RGB |
 | sehr selten | `0xDEAD` DISPLAY FAILURE | 1,5 % | Verschiebung + RGB + Korruption |
 | sehr selten | `0x000` DISPLAY LOST | 1,2 % | Screen wird 0,3–1 s schwarz |
 | sehr selten | `∞` SYSTEM COLLAPSE | 0,8 % | vier Effekte kombiniert |
 | sehr selten | `ERROR` THE ERROR HAS ENCOUNTERED AN ERROR | 0,6 % | Korruption + RGB + UI-Versatz |
 | extrem selten | `∅` SIGNAL LOST | 0,3 % | der Screen verschwindet: `... ... ... oh. ERROR.` |
 
-Gesamt liegen alle Glitches bei rund 24,7 % – jeder einzelne deutlich unter 10 %.
+Gesamt liegen alle Glitches bei rund 22,7 % – jeder einzelne deutlich unter 10 %.
 Die Werte stehen in `src/data/glitches.js` und lassen sich dort direkt ändern.
 
 Regeln, die im Code hart eingehalten werden:

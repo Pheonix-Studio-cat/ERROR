@@ -128,14 +128,6 @@ export const CHAOS = [
     },
   },
   {
-    code: '666',
-    title: 'Cursed dependency.',
-    joke: {
-      en: ['A package from 2013 has woken up.', 'It is very angry.'],
-      de: ['Ein Paket aus dem Jahr 2013', 'ist erwacht und sehr wütend.'],
-    },
-  },
-  {
     code: '¯\\_(ツ)_/¯',
     title: 'No further information.',
     joke: {
