@@ -5,17 +5,30 @@
  * - Code, technische Beschreibung und Witz werden unabhängig gezogen und
  *   können frei kombiniert werden (mit einer Chance auf bewusstes "Mismatch").
  * - Derselbe Code / derselbe Witz soll sich möglichst nicht direkt wiederholen.
+ * - Zuerst wird auf die Glitch-Fehler gewürfelt (jeder mit eigener, kleiner
+ *   Wahrscheinlichkeit, siehe data/glitches.js). Fällt der Wurf in keines der
+ *   Bänder, geht es ganz normal weiter.
  * - Sehr selten (1 %) erscheint stattdessen ein verstecktes Glitch-Event.
  */
 import { ERROR_CODES, MODULES, SEVERITIES } from '../data/errors.js';
 import { JOKES } from '../data/jokes.js';
+import { GLITCH_ERRORS } from '../data/glitches.js';
 import { CHAOS, CHAOS_META } from '../data/responses.js';
 import { SECRET_EVENTS } from '../data/secrets.js';
 import { LEVELS, META_FLAVOR, STACK_FRAMES } from '../data/system.js';
+import { getLanguage, t, text } from './i18n.js';
 import { chance, makeErrorId, pick, pickAvoiding, pickWeighted, randInt, sample } from './random.js';
 
 /** Wahrscheinlichkeit für ein verstecktes Glitch-Event. */
 export const SECRET_CHANCE = 0.01;
+
+/** Severity-Text je Glitch-Stufe - je seltener, desto ratloser. */
+const SEVERITY_BY_TIER = {
+  light: 'CORRUPTED',
+  rare: 'UNSTABLE',
+  'very-rare': 'CRITICAL',
+  extreme: '???',
+};
 
 /** Wahrscheinlichkeit, dass Code und Beschreibung absichtlich nicht zusammenpassen. */
 const MISMATCH_CHANCE = 0.22;
@@ -35,11 +48,52 @@ export function generateError({
   lastCode = null,
   lastJoke = null,
   allowSecret = true,
+  allowGlitch = true,
 } = {}) {
-  if (allowSecret && mode === 'normal' && chance(SECRET_CHANCE)) {
-    return buildSecret();
+  if (mode === 'chaos') return buildChaos(lastCode);
+
+  if (allowGlitch) {
+    const glitch = rollGlitch();
+    if (glitch) return buildGlitch(glitch);
   }
-  return mode === 'chaos' ? buildChaos(lastCode) : buildStandard(lastCode, lastJoke);
+
+  if (allowSecret && chance(SECRET_CHANCE)) return buildSecret();
+
+  return buildStandard(lastCode, lastJoke);
+}
+
+/**
+ * Ein einziger Wurf über alle Glitch-Bänder.
+ *
+ * Jeder Glitch belegt genau so viel vom Intervall [0,1), wie seine `chance`
+ * angibt. Der Rest - gut drei Viertel - gehört den normalen Fehlern.
+ *
+ * @returns {object|null} der getroffene Glitch oder null
+ */
+function rollGlitch() {
+  const roll = Math.random();
+  let edge = 0;
+
+  for (const glitch of GLITCH_ERRORS) {
+    edge += glitch.chance;
+    if (roll < edge) return glitch;
+  }
+  return null;
+}
+
+/** Baut einen Glitch-Fehler inklusive seiner Effektliste. */
+function buildGlitch(glitch) {
+  return finalize({
+    mode: 'glitch',
+    code: glitch.code,
+    title: glitch.title,
+    detail: text(glitch.detail),
+    joke: text(glitch.joke),
+    severity: SEVERITY_BY_TIER[glitch.tier],
+    tone: 'glitch',
+    tier: glitch.tier,
+    effects: glitch.effects,
+  });
 }
 
 /** Der normale Fall: echter HTTP-Code, echte Beschreibung, unpassender Witz. */
@@ -58,7 +112,7 @@ function buildStandard(lastCode, lastJoke) {
     mode: 'normal',
     code: entry.code,
     title: mismatched.title,
-    detail: mismatched.detail,
+    detail: text(mismatched.detail),
     joke: pickJoke(lastJoke),
     severity: severity.label,
     tone: severity.tone,
@@ -73,11 +127,11 @@ function buildChaos(lastCode) {
     mode: 'chaos',
     code: entry.code,
     title: entry.title,
-    detail: pick(ERROR_CODES).detail,
-    joke: entry.joke,
+    detail: text(pick(ERROR_CODES).detail),
+    joke: text(entry.joke),
     severity: chance(0.5) ? 'CRITICAL' : 'CATASTROPHIC',
     tone: 'critical',
-    extraMeta: sample(CHAOS_META, 2),
+    extraMeta: sample(CHAOS_META, 2).map(text),
   });
 }
 
@@ -89,8 +143,8 @@ function buildSecret() {
     mode: 'secret',
     code: event.code,
     title: event.title,
-    detail: 'Dieses Ereignis war nicht vorgesehen.',
-    joke: event.joke,
+    detail: t('secretDetail'),
+    joke: text(event.joke),
     severity: event.severity,
     tone: event.fakeFix ? 'ok' : 'secret',
     secretId: event.id,
@@ -98,9 +152,9 @@ function buildSecret() {
   });
 }
 
-/** Zieht einen Witz und vermeidet dabei den zuletzt gezeigten. */
+/** Zieht einen Witz in der aktuellen Sprache und vermeidet den zuletzt gezeigten. */
 function pickJoke(lastJoke) {
-  return pickAvoiding(JOKES, (lines) => lines[0] === lastJoke);
+  return text(pickAvoiding(JOKES, (entry) => text(entry)[0] === lastJoke));
 }
 
 /**
@@ -109,14 +163,19 @@ function pickJoke(lastJoke) {
  */
 function finalize(partial) {
   return {
-    level: partial.mode === 'secret' ? 'GLITCH' : pick(LEVELS),
+    level: partial.mode === 'normal' || partial.mode === 'chaos' ? pick(LEVELS) : 'GLITCH',
     errorId: makeErrorId(),
     module: pick(MODULES),
     timestamp: fakeTimestamp(),
-    meta: [...sample(META_FLAVOR, 2).map((fn) => fn()), ...(partial.extraMeta ?? [])],
+    meta: [
+      ...sample(META_FLAVOR, 2).map((fn) => fn(getLanguage())),
+      ...(partial.extraMeta ?? []),
+    ],
     stack: buildStack(),
     secretId: null,
     fakeFix: false,
+    tier: null,
+    effects: [],
     ...partial,
   };
 }

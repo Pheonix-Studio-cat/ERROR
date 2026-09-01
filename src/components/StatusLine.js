@@ -8,6 +8,7 @@ export function createStatusLine() {
   const status = el('span', { class: 'statusline__value', text: 'BOOTING' });
   const errors = el('span', { class: 'statusline__value', text: '0' });
   const chaos = el('span', { class: 'statusline__value', text: '0%' });
+  const nodes = el('span', { class: 'statusline__value', text: '1' });
   const clock = el('span', { class: 'statusline__clock', text: '--:--:--' });
 
   const root = el('div', { class: 'statusline' }, [
@@ -24,6 +25,10 @@ export function createStatusLine() {
       el('span', { class: 'statusline__key', text: 'chaos:' }),
       chaos,
     ]),
+    el('span', { class: 'statusline__cell' }, [
+      el('span', { class: 'statusline__key', text: 'nodes:' }),
+      nodes,
+    ]),
     clock,
   ]);
 
@@ -36,10 +41,11 @@ export function createStatusLine() {
     setInterval(tick, 1000);
   }
 
-  function render({ errorCount, chaosLevel, label }) {
+  function render({ errorCount, chaosLevel, label, nodeCount }) {
     status.textContent = label;
     errors.textContent = String(errorCount);
     chaos.textContent = `${chaosLevel}%`;
+    nodes.textContent = String(nodeCount);
     root.dataset.chaos = chaosLevel >= 70 ? 'high' : chaosLevel >= 35 ? 'mid' : 'low';
   }
 

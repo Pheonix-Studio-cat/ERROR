@@ -31,18 +31,41 @@ export const STACK_FRAMES = [
   { fn: 'panic', file: 'kernel/panic.js' },
 ];
 
+/** Regionen für die (natürlich erfundenen) Knoten des Serverpools. */
+export const REGIONS = [
+  'eu-central-1',
+  'us-east-2',
+  'ap-south-1',
+  'eu-west-3',
+  'us-west-1',
+  'sa-east-1',
+];
+
 /** Log-Level vor jedem Fehler - wie die Stufen in einem echten Systemlog. */
 export const LEVELS = ['FATAL', 'PANIC', 'ABORT', 'TRAP', 'SEGFAULT', 'CRASH'];
 
-/** Zufällige Zusatzfelder in der Metaliste der Fehlerkarte. */
+/**
+ * Zufällige Zusatzwerte in der Fehlerausgabe.
+ * Jede Funktion bekommt die aktuelle Sprache und liefert die passende Zeile.
+ */
 export const META_FLAVOR = [
-  () => `Uptime: ${randInt(0, 3)}h ${randInt(0, 59)}m (geschätzt)`,
+  (lang) =>
+    `Uptime: ${randInt(0, 3)}h ${randInt(0, 59)}m ${lang === 'de' ? '(geschätzt)' : '(estimated)'}`,
   () => `Retries: ${randInt(1, 47)}`,
   () => `Confidence: ${randInt(2, 41)} %`,
   () => `Coffee: ${randInt(0, 3)} ml`,
-  () => `Threads: ${randInt(1, 12)} (davon ${randInt(1, 12)} blockiert)`,
-  () => `Memory: ${randInt(87, 99)} % belegt`,
-  () => `Support: offline seit ${randInt(2, 9)} Tagen`,
+  (lang) => {
+    const total = randInt(1, 12);
+    const blocked = randInt(1, total);
+    return lang === 'de'
+      ? `Threads: ${total} (davon ${blocked} blockiert)`
+      : `Threads: ${total} (${blocked} of them blocked)`;
+  },
+  (lang) => `Memory: ${randInt(87, 99)} % ${lang === 'de' ? 'belegt' : 'used'}`,
+  (lang) =>
+    lang === 'de'
+      ? `Support: offline seit ${randInt(2, 9)} Tagen`
+      : `Support: offline for ${randInt(2, 9)} days`,
   () => `Node: eu-central-${randInt(1, 4)}`,
 ];
 

@@ -5,9 +5,16 @@
  * `cls` steuert nur die Farbe (wie ANSI-Farben in einem echten Terminal).
  */
 import { toBanner } from './banner.js';
+import { getLanguage } from './i18n.js';
 
 /** Leerzeile - häufig genug, um sie einmal zu benennen. */
 const BLANK = [];
+
+/** Anführungszeichen je Sprache - deutsche Zitate sehen anders aus. */
+const QUOTES = {
+  en: ['\u201c', '\u201d'],
+  de: ['\u201e', '\u201c'],
+};
 
 /**
  * @param {object} error - Ergebnis von generateError()
@@ -18,6 +25,8 @@ export function formatError(error) {
     [
       { text: `[${error.timestamp}] `, cls: 'dim' },
       { text: error.level, cls: 'accent' },
+      // Kommt der Fehler aus dem Serverpool, steht der Knoten dabei.
+      { text: error.source ? `  ${error.source}` : '', cls: 'faint' },
       { text: `  ERROR ${error.code}`, cls: 'accent bold' },
       { text: ` · ${error.title}` },
     ],
@@ -27,7 +36,10 @@ export function formatError(error) {
     BLANK,
     [{ text: `  ${error.detail}`, cls: 'dim' }],
     BLANK,
-    ...error.joke.map((line) => [{ text: `  „${line}“`, cls: 'joke' }]),
+    ...error.joke.map((line) => {
+      const [open, close] = QUOTES[getLanguage()] ?? QUOTES.en;
+      return [{ text: `  ${open}${line}${close}`, cls: 'joke' }];
+    }),
     BLANK,
     [
       { text: '  id=', cls: 'faint' },

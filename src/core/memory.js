@@ -1,7 +1,7 @@
 /**
- * Merkt sich ein paar Kleinigkeiten zwischen zwei Seitenaufrufen:
- * zuletzt gezeigter Fehlercode (damit er sich nicht direkt wiederholt),
- * Anzahl der Besuche und wie oft schon eskaliert wurde.
+ * Merkt sich ein paar Kleinigkeiten zwischen zwei Seitenaufrufen: die gewählte
+ * Sprache, den zuletzt gezeigten Fehlercode (damit er sich nicht direkt
+ * wiederholt), die Anzahl der Besuche und wie oft schon eskaliert wurde.
  *
  * Alles optional: Wenn localStorage blockiert ist (privates Fenster,
  * strenge Browser-Einstellungen), läuft die Seite trotzdem normal weiter.
@@ -9,11 +9,13 @@
 const STORAGE_KEY = 'error-site::memory';
 
 const DEFAULTS = {
+  lang: null,
   lastCode: null,
   lastJoke: null,
   visits: 0,
   worseCount: 0,
   secretsFound: [],
+  glitchesFound: [],
 };
 
 /** Liest den gespeicherten Zustand - fällt bei Problemen auf Defaults zurück. */
